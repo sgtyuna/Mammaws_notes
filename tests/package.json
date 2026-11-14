@@ -1,0 +1,13 @@
+{
+  "name": "mammaws-notes-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests for Mammaw's Notes. The app never loads these files. Test data uses made-up people only.",
+  "scripts": {
+    "test": "node journal.test.mjs",
+    "icons": "node make-icons.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.57.0"
+  }
+}
