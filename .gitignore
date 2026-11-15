@@ -1,0 +1,9 @@
+# Mac
+.DS_Store
+
+# Test tools
+node_modules/
+tests/out/
+
+# Claude Code worktrees
+.claude/worktrees/
