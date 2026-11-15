@@ -23,7 +23,8 @@ This repo holds **only the app code**. It holds no names, notes, songs, or photo
 - One timeline per person, newest first, with filters and search.
 - Edit anything. Deleting asks first and offers Undo.
 - Backup: save one person to one file (photos included) and open it on another device. This is also how notes move between phone and computer. Opening a backup never touches anyone else; if the person is already there, it asks whether to replace or keep both.
-- Photos are shrunk to JPEG, at most 1600 px on the long side, before they're stored.
+- Photos are shrunk to JPEG before they're stored: note photos at most 1600 px on the long side, a person's own photo at most 800 px.
+- Backup reminder: once a backup exists, a gentle note appears when there are newer notes and the last backup is over a week old. Before the first backup, it appears at 3 notes, or once the first note is a week old.
 
 ## Part 2: caregiver screens (not built yet)
 
@@ -31,7 +32,7 @@ Who's Here cards, Photo Book, one-button music. Waits for approval of Part 1.
 
 ## Running the tests
 
-Needs Google Chrome and Node.
+Needs Google Chrome and Node. The tests look for Chrome at its usual Mac spot (`/Applications/Google Chrome.app`); on another computer, set `CHROME` to where Chrome is.
 
 ```
 cd tests

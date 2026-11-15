@@ -97,6 +97,7 @@ d = await dump(pg);
 eq(d.entries.find(e => e.kind === 'said').words, QUOTE, 'their words stored exactly as typed (spaces, spelling, line break)');
 const shown = await pg.$eval('.said', el => el.textContent);
 eq(shown, QUOTE, 'their words shown exactly as typed');
+eq(await pg.$eval('.said', el => [getComputedStyle(el, '::before').content, getComputedStyle(el, '::after').content].join()), 'none,none', 'no quote marks added on screen');
 
 await openKind(pg, 'photo');
 await pg.setInputFiles('[name=file]', await testImage(pg, 3200, 2000, 200));
@@ -238,13 +239,21 @@ await pg.click('#dialog button >> text=Keep both');
 await pg.waitForSelector('#sheet', { state: 'hidden' });
 d = await dump(pg);
 eq(d.people.length, 3, 'Keep both adds a second copy');
+// Two copies now share a name. Give the open copy one more note so they differ,
+// then Replace must say which copy each button means, and replace only that one.
+await openKind(pg, 'said');
+await pg.fill('[name=words]', 'only in the second copy');
+await save(pg);
 await importAgain();
-await pg.click('#dialog button >> text=/^Replace /');
+const askText = await pg.textContent('#dialog');
+ok(askText.includes('2 copies') && askText.includes('7 notes') && askText.includes('6 notes'), 'with two copies, the ask tells them apart by notes count');
+await pg.click('#dialog button >> text=/with 7 notes/');
 ok((await pg.textContent('#dialog')).includes('Go ahead?'), 'Replace asks a second time');
 await pg.click('#dialog button:text-is("Replace")');
 await pg.waitForSelector('#sheet', { state: 'hidden' });
 d = await dump(pg);
 eq(d.people.length, 3, 'Replace swaps one copy, does not add');
+eq(d.entries.filter(e => e.words === 'only in the second copy').length, 0, 'the picked copy was the one replaced');
 eq(d.entries.filter(e => e.words === 'Test Pop stays put').length, 1, "Test Pop's notes untouched by imports");
 eq(d.entries.length, 6 + 6 + 1, 'no notes duplicated or lost');
 

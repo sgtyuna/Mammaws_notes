@@ -1,6 +1,6 @@
 // Keeps the app working offline once it has loaded. Holds app code only, never notes or photos.
 // When any app file changes, raise the version number so phones pick up the new copy.
-const CACHE = 'mammaws-notes-v1';
+const CACHE = 'mammaws-notes-v2';
 const FILES = [
   './',
   './index.html',

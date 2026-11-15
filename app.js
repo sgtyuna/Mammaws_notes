@@ -244,7 +244,11 @@ async function renderBanners() {
   const p = person();
   const last = await db.getMeta('lastExport:' + p.id);
   const newest = Math.max(0, ...S.entries.map(e => e.updatedAt || e.createdAt), p.updatedAt || 0);
-  const stale = last ? (newest > last && Date.now() - last > BACKUP_NUDGE_DAYS * 864e5) : S.entries.length >= 3;
+  // Never backed up: nudge at 3 notes, or once the first note is a week old.
+  const oldest = Math.min(Infinity, ...S.entries.map(e => e.createdAt));
+  const stale = last
+    ? (newest > last && Date.now() - last > BACKUP_NUDGE_DAYS * 864e5)
+    : S.entries.length >= 3 || Date.now() - oldest > BACKUP_NUDGE_DAYS * 864e5;
   if (stale) {
     out.push(`<div class="banner"><span>${last ? `Last backup ${esc(shortDate(last))}.` : 'No backup saved yet.'} A backup file keeps these notes safe.</span> <button class="link" data-go="backup">Save one</button></div>`);
   }
@@ -713,15 +717,25 @@ async function importFile(file) {
     if (data.version > 1) throw new Error('This backup was made by a newer version of the app. Update the app, then try again.');
 
     let replace = null;
-    const match = S.people.find(p => sameName(p.name, data.person.name));
-    if (match) {
-      const choice = await ask(`<b>${esc(nameOf(match))}</b> is already on this device. What should happen?`, [
-        { label: `Replace ${nameOf(match)} with the backup`, value: 'replace', style: 'danger' },
+    const matches = S.people.filter(p => sameName(p.name, data.person.name));
+    if (matches.length) {
+      // After "Keep both" there can be two copies with one name, so each Replace button says which copy it means.
+      const copies = await Promise.all(matches.map(async p => {
+        const es = await db.byPerson('entries', p.id);
+        const changed = Math.max(p.updatedAt || p.createdAt || 0, ...es.map(e => e.updatedAt || e.createdAt));
+        return { p, label: `Replace the copy with ${es.length} ${es.length === 1 ? 'note' : 'notes'}, last changed ${shortDate(changed)}` };
+      }));
+      const one = matches.length === 1;
+      const choice = await ask(one
+        ? `<b>${esc(nameOf(matches[0]))}</b> is already on this device. What should happen?`
+        : `There are ${matches.length} copies of <b>${esc(nameOf(matches[0]))}</b> on this device already. What should happen?`, [
+        ...copies.map(c => ({ label: one ? `Replace ${nameOf(c.p)} with the backup` : c.label, value: c.p, style: 'danger' })),
         { label: 'Keep both', value: 'both', style: 'primary' },
         { label: 'Cancel', value: null },
       ]);
       if (!choice) return;
-      if (choice === 'replace') {
+      if (choice !== 'both') {
+        const match = choice;
         const ok = await ask(`Replacing removes the notes for ${esc(nameOf(match))} that are on this device now, and puts the backup's notes in their place. Go ahead?`, [
           { label: 'Replace', value: true, style: 'danger' },
           { label: 'Cancel', value: false, style: 'primary' },
